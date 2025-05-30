@@ -1,23 +1,22 @@
-# Usa una imagen oficial de Node.js (versión 18)
-FROM node:22.12.0-alpine
+# Etapa de construcción
+FROM node:22.12.0-alpine AS builder
 
-# Crea un directorio para la app
 WORKDIR /app
 
-# Copia los archivos de configuración del proyecto
-COPY package.json package-lock.json ./
+COPY package*.json ./
+RUN npm ci
 
-# Instala las dependencias (modo producción)
-RUN npm ci --only=production
-
-# Copia el resto del código
 COPY . .
-
-# Compila la aplicación (si usas TypeScript)
 RUN npm run build
 
-# Puerto que usará la app (Koyeb lo manejará automáticamente)
-EXPOSE 4000
+# Etapa de producción
+FROM node:18-alpine
 
-# Comando para iniciar la app en producción
-CMD ["node", "dist/main.js"]
+WORKDIR /app
+
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package*.json ./
+
+EXPOSE 4000
+CMD ["npm", "run", "start:prod"]
