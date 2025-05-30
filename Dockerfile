@@ -1,21 +1,24 @@
-# Usa una imagen oficial de Node.js (versión 18)
-FROM node:22.12.0-alpine
+# Usa Node.js v22
+FROM node:22-alpine
 
-# Crea un directorio para la app
+# Directorio de trabajo
 WORKDIR /app
 
-# Copia los archivos de configuración del proyecto
+# Copia archivos de dependencias
 COPY package.json package-lock.json ./
 
-# Instala las dependencias (modo producción)
-RUN npm ci --only=production
+# Instala dependencias INCLUYENDO @nestjs/cli (para construcción)
+RUN npm ci
 
 # Copia el resto del código
 COPY . .
 
-# Compila la aplicación (si usas TypeScript)
+# Compila la aplicación (ahora nest estará disponible)
 RUN npm run build
 
-# Puerto que usará la app (Koyeb lo manejará automáticamente)
+# Instala SOLO dependencias de producción (optimización final)
+RUN npm prune --production
+
+# Puerto y comando de inicio
 EXPOSE 4000
-CMD ["npm", "run", "start:prod"]
+CMD ["node", "dist/main.js"]
